@@ -1,0 +1,97 @@
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <sched.h>
+#include <string.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <sys/mman.h>
+#include <semaphore.h>
+
+# define MAX_PATH FILENAME_MAX
+
+#include "sgx_urts.h"
+#include "App.h"
+#include "Enclave_u.h"
+#include "../../mg.h"
+#include "../Enclave/aes.h"
+
+
+# define TOKEN_FILENAME   "enclave.token"
+# define ENCLAVE_FILENAME "enclave.signed.so"
+
+/* Global EID shared by multiple threads */
+sgx_enclave_id_t global_eid = 0;
+
+void set_cpu(pid_t target, int cpu){
+  cpu_set_t  mask;
+  CPU_ZERO(&mask);
+  CPU_SET(cpu, &mask);
+  sched_setaffinity(target, sizeof(mask), &mask);
+}
+
+/* Application entry */
+int SGX_CDECL main(int argc, char *argv[])
+{
+  int fd;
+  int i;
+  
+  sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+
+  sgx_launch_token_t token = {0};
+  int updated = 0;
+  ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, &token, &updated, &global_eid, NULL);
+  if (ret != SGX_SUCCESS) {
+      printf("sgx_create_enclave Error: %d\n", ret);
+      return -1;
+  }
+  
+  fd = open("/dev/mg", O_RDWR);
+  if (fd == -1) {
+      printf("Couldn't open /dev/mg\n");
+      return 1;
+  }
+
+  struct mg_generic_param param;
+
+  ret = ioctl(fd, MG_IOCTL_INSTALL_TIMER, &param);
+  if(ret) {
+    printf("IOCTL failed %d\n", errno);
+    return 1;
+  }
+  
+  for(int i = 0; i < 2000000 ; i++);
+
+  long x;
+  
+  ret = do_something_secret(global_eid, &x);
+ 
+  ret = ioctl(fd, MG_IOCTL_UNINSTALL_TIMER, &param);
+  if(ret) {
+    printf("IOCTL failed %d\n", errno);
+    return 1;
+  }
+
+
+  printf("\n");
+
+  if (ret != SGX_SUCCESS) {
+      printf("Error: %d\n", ret);
+      return -1;
+  }
+  /* Destroy the enclave */
+  sgx_destroy_enclave(global_eid);
+  if (ret != SGX_SUCCESS) {
+      printf("Error: %d\n", ret);
+      return -1;
+  }
+
+  printf("Info: Successfully returned.\n");
+  return 0;
+}

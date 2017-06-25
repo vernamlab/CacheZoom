@@ -1,0 +1,1 @@
+cmd_/home/danm/Project/cachezoom/kernel/cachezoom_kernel.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/danm/Project/cachezoom/kernel/cachezoom_kernel.ko /home/danm/Project/cachezoom/kernel/cachezoom_kernel.o /home/danm/Project/cachezoom/kernel/cachezoom_kernel.mod.o

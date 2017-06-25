@@ -1,0 +1,56 @@
+
+#include "Enclave.h"
+#include "Enclave_t.h"
+#include "aes.h"
+
+#define CPU_L1_CACHE_SET_COUNT   64
+#define CPU_L1_CACHE_SET_ASSOC   8
+#define CPU_L1_LINE_OFFSET_WORD  0b1000000000000
+
+#define idx(_line, _set) ( ((CPU_L1_LINE_OFFSET_WORD) * (_line)) / 8 + (((CPU_L1_CACHE_SET_ASSOC) * (_set))))
+#define idx0(_set) ((((CPU_L1_CACHE_SET_ASSOC) * (_set))))
+
+#define DATA_SIZE 0x10000
+
+
+long do_something_secret(void)
+{
+  unsigned long secret_data[DATA_SIZE];
+  unsigned int x = 0;
+  unsigned long * ptr = secret_data;
+//  ptr += 1024 * 3 - 256;
+ 
+  for(int j = 0 ; j < 4 ; j++)
+  {
+    for(int i=16; i < 32; i++)
+    {
+      x &= *(ptr + idx0(i%64));
+      asm volatile("lfence;");
+    }
+
+    for(int i=32; i >= 16; i--)
+    {
+      x &= *(ptr + idx0(i%64));
+      asm volatile("lfence;");
+    }
+
+   for(int i=16; i < 32; i++)
+    {
+      x &= *(ptr + idx0(i%64));
+      asm volatile("lfence;");
+    }
+
+    for(int i=32; i >= 16; i--)
+    {
+      x &= *(ptr + idx0(i%64));
+      asm volatile("lfence;");
+    }
+  }
+
+
+/*  for(int i=0; i < 1000; i++)
+  {
+     x &= *(secret_data + idx0(random_set[i]));
+  }
+*/
+}

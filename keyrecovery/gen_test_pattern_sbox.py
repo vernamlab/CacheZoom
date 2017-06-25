@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+
+def get_set(addr):
+   return (addr >> 6) & 0b111111
+
+
+stack_sets = []
+table_sets = []
+
+T0 = 0x0406000
+T0_enclave = 0x27800
+f = open("../src/AESPrefetchAttackEnclave/MyPinTool_SBOX/output.txt")
+print '"'+f.readline().strip()+'"'
+line = f.readline()
+c = 0
+while line:
+  parts = line.strip().split(' ')
+  if parts[0] == 'S':
+    stack_addr = int(parts[1].strip(), 16)
+    _set = get_set(stack_addr)
+    stack_sets.append(_set)
+
+  if parts[0] == 'T':
+    offset = int(parts[1].strip(), 16) - T0
+#    print chr((offset - ((c % 4) * 1024))/ 4) # leak key
+    enclave_addr = T0_enclave + offset
+    _set = get_set(enclave_addr)
+    table_sets.append(_set)
+    c += 1
+
+  line = f.readline()
+
+
+#print stack_sets
+print len(table_sets)
+last_round = table_sets[len(table_sets) - 16: len(table_sets)]
+print last_round
+hist = {}
+for v in last_round:
+  if hist.has_key(v):
+    hist[v] += 1
+  else:
+    hist.update({v : 1})
+print hist
+
+#for i in xrange(0, len(table_sets), 16):
+#  print "%s,"%(table_sets[i:i+16])
+
+
+TE0 = 0x26800
+#TE0 = 0x404780
+
+#for addr in xrange(TE0, TE0 + 4*0x400, 4):
+#  print hex(addr), (addr >> 6) & 0b111111, bin((addr >> 6) & 0b111111)
+
+'''
+print "TE0--------------------"
+for addr in xrange(TE0, TE0 + 0x400, 64):
+  print hex(addr), (addr >> 6) & 0b111111, bin((addr >> 6) & 0b111111)
+
+print "TE1--------------------"
+for addr in xrange(TE0 + 0x400, TE0 + 2 * 0x400, 64):
+  print hex(addr), (addr >> 6) & 0b111111, bin((addr >> 6) & 0b111111)
+
+print "TE2--------------------"
+for addr in xrange(TE0 + 2 * 0x400, TE0 + 3 * 0x400, 64):
+  print hex(addr), (addr >> 6) & 0b111111, bin((addr >> 6) & 0b111111)
+
+print "TE3--------------------"
+for addr in xrange(TE0 + 3 * 0x400, TE0 + 4 * 0x400, 64):
+  print hex(addr), (addr >> 6) & 0b111111, bin((addr >> 6) & 0b111111)
+'''

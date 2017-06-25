@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+import random
+l = []
+for i in xrange(10000):
+  l.append(random.randint(0, 64))
+
+print l

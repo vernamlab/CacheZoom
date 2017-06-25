@@ -1,0 +1,14 @@
+enclave {
+
+    include "user_types.h" /* buffer_t */
+
+    from "Edger8rSyntax/Types.edl" import *;
+    from "Edger8rSyntax/Pointers.edl" import *;
+    from "Edger8rSyntax/Arrays.edl" import *;
+    from "Edger8rSyntax/Functions.edl" import *;
+
+    trusted {
+        public long do_something_secret(void);
+    };
+
+};

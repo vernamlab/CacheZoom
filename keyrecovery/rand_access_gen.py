@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+rnd_file = open("/dev/urandom","rb")
+
+for i in xrange(20):
+  print "\"\\x"+"\\x".join("{:02x}".format(ord(c)) for c in rnd_file.read(16))+"\""
